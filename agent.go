@@ -5,14 +5,11 @@ import "net/http"
 import "encoding/json"
 import "log"
 import "errors"
-//import "sync"
 import "os"
 import "strconv"
 
-import "github.com/go-chi/chi/v5"
-
-//variable
-//import "github.com/joho/godotenv"
+//import "github.com/go-chi/chi/v5"
+//import "github.com/recoilme/pudge"
 
 //представление задачи для агента
 type Task struct {
@@ -41,37 +38,33 @@ func main() {
 		go execTask(chanTasks, chanResults)
 	}
 
-	//main agent router
-	r := chi.NewRouter()
-
 	//wait results from chanResults
 	go waiterResults(chanResults, r)
 
+	//send request to get new task
+	go takerTask(chanTasks)
 
 	log.Println("-- -- RUN IT -- --")
 
-	//pool workers
-	r.Post("/internal/task", func(w http.ResponseWriter, r *http.Request) {
-		if r.Body == nil {
-			w.WriteHeader(404)
-			log.Print("task: POST -- 404")
-		}
-		//task for our execTask chan
-		var task Task
+	// r.Post("/internal/task", func(w http.ResponseWriter, r *http.Request) {
+	// 	if r.Body == nil {
+	// 		w.WriteHeader(404)
+	// 		log.Print("task: POST -- 404")
+	// 	}
+	// 	//task for our execTask chan
+	// 	var task Task
 
-		//
-		errorDecode := json.NewDecoder(r.Body).Decode(&task);
-		if errorDecode != nil {
-			w.WriteHeader(500)
-			log.Print("task: POST -- 500")
-		}
+	// 	//
+	// 	errorDecode := json.NewDecoder(r.Body).Decode(&task);
+	// 	if errorDecode != nil {
+	// 		w.WriteHeader(500)
+	// 		log.Print("task: POST -- 500")
+	// 	}
 		
-		chanTasks <- task
+	// 	chanTasks <- task
 
-		//need get error if operation not in our container operations
-	})
-
-	http.ListenAndServe(":8080", r)
+	// 	//need get error if operation not in our container operations
+	// })
 }
 
 func execTask(chanTasks chan Task, chanResults chan *ResultTask) {
@@ -99,24 +92,55 @@ func execTask(chanTasks chan Task, chanResults chan *ResultTask) {
 }
 
 func waiterResults(chanResults chan *ResultTask, r *chi.Mux) {
+	client := http.Client()
 	for {
 		select {
 			case result := <- chanResults:
-				r.Post("/internal/task", func(w http.ResponseWriter, r *http.Request) {
-					//post result to endpoint
+				resp, err := client.Post("http://locahost:8080/internal/task", "applciation/json", result)
+				
+				if err != nil {
+					log.Println("error from waiterResults")
+					continue
+				}
 
-					response := map[string]interface{} {
-						"data": map[string]interface{} {
-							"id": result.Id,
-							"result": result.Result,
-						},
-					}
+				log.Println(resp)
+				// func(w http.ResponseWriter, r *http.Request) {
+				// 	//post result to endpoint
 
-		//response
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-				})
+				// 	response := map[string]interface{} {
+				// 		"data": map[string]interface{} {
+				// 			"id": result.Id,
+				// 			"result": result.Result,
+				// 		},
+				// 	}
+
+				// 	//response
+				// 	w.Header().Set("Content-Type", "application/json")
+				// 	json.NewEncoder(w).Encode(response)
+				//})
 			//case timer 
+		}
+	}
+}
+
+func takerTask(chanTasks chan Task) {
+	ticker := time.NewTicker(3 * time.Second)
+	client := http.Client{}
+	url := "http://locahost:8080/internal/task"
+	for {
+
+		select {
+			case <- ticker.C :
+				response, err := client.Get(url)
+				if err != nil {
+					log.Println("error from takerTask")
+					continue
+				} 
+
+				var task Task
+				json.NewDecoder(response.Body).Decode(&task)
+
+				chanTasks <- task
 		}
 	}
 }
