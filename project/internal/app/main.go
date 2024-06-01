@@ -1,8 +1,8 @@
 package main
 import (
-	"go/project/internal/config"
-	"go/project/internal/models"
-	"go/project/internal/services" 
+	"goya/project/internal/config"
+	"goya/project/internal/models"
+	"goya/project/internal/services" 
 	
     "log"
 	"net/http"
