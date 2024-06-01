@@ -31,8 +31,6 @@ func main() {
 	defer dbTasksRaw.DeleteFile()
 	defer dbTasksInProccess.DeleteFile()
 	defer dbTasksDone.DeleteFile()
-
-	defer log.Println("CLOSE FILE")
 	
 	//запуск агентов в отдельных выражений до переменной COMPUTING_POWER 
 	for i := 0; i < countExec; i++ {
