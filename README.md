@@ -25,5 +25,5 @@ REST, разбивающий арифметическое выражение н�
 Для запуска проекта:<br />
 ```cd %GOPATH% (example - "C:\Program Files\Go\src")```<br />
 ```git clone https://github.com/Dmitry9004/goya.git```<br />
-```go run goya/project/internal/app/main.go (As admin)```<br />
+```go run goya\project\internal\app\main.go (As admin)```<br />
   
