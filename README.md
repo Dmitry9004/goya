@@ -14,8 +14,8 @@ REST, разбивающий арифметическое выражение н�
 Получениe всех выражений:<br />
 ```curl -X POST -H "Content-Type: application/json"  localhost:8080/api/v1/expressions```<br />
 Ответ:<br />
-```[{"Id":6813596,"Status":"Done","Result":"6"}<br />
-{"Id":2182735,"Status":"Done","Result":"100"}]```<br />
+```[{"Id":6813596,"Status":"Done","Result":"6"}```<br />
+```{"Id":2182735,"Status":"Done","Result":"100"}]```<br />
 
 Получение выражения по его id:<br />
 ```curl localhost:8080/api/v1/expressions/5433955```<br />
