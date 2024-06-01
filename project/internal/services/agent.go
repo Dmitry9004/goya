@@ -41,7 +41,7 @@ func ToPostfix(str string) ([]string, error) {
             continue
         }
         
-        if isNum, _ := regexp.MatchString("[0-9]", ch); isNum {
+        if isNum(ch) {
             num, index := getFullNum(str, i)
             res = append(res, num)
             i = index
@@ -171,7 +171,7 @@ func TakerTask(chanTasks chan models.Task) {
 	}
 }
 
-//метод выполнения простейших операций на 2 операндами
+//метод выполнения простейших операций
 func calculate(task models.Task) (float64, error) {	
 	result := 0.0
 	
