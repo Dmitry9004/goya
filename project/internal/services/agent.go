@@ -1,6 +1,6 @@
 package services
 
-import "go/project/internal/models"
+import "goya/project/internal/models"
 import "regexp"
 import "errors"
 import "log"
