@@ -1,6 +1,6 @@
 package services
 
-import "go/project/internal/models"
+import "goya/project/internal/models"
 import "github.com/recoilme/pudge"
 import "crypto/rand"
 import "math/big"
