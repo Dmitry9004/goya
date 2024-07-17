@@ -13,7 +13,7 @@ REST, разбивающий арифметическое выражение н�
 ```{"id": 253234}```<br />
 
 Получениe всех выражений:<br />
-```curl -X POST -H "Content-Type: application/json"  localhost:8080/api/v1/expressions```<br />
+```curl localhost:8080/api/v1/expressions```<br />
 Ответ:<br />
 ```[{"Id":6813596,"Status":"Done","Result":"6"}```<br />
 ```{"Id":2182735,"Status":"Done","Result":"100"}]```<br />
