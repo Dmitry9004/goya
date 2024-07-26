@@ -2,24 +2,34 @@ package models
 
 import "time"
 
+type User struct {
+	Id int 			`json: "id"`
+	Username string `json: "username"`
+	Password string `json: "password"`
+}
+
 //представление выражения(GET)
 type ArithmeticRequest struct {
 	Expression string   `json:"expression"`
 }
 //представление выражения(POST)
 type Expression struct {
-	Id int 			`json: 'id'`
-	Status string   `json: 'status'`
-	Result string   `json: 'result'`
+	Id int 				`json: 'id'`
+	UserId int 			`json: 'user_id'`
+	Status string   	`json: 'status'`
+	Result string   	`json: 'result'`
 }
 
 //представление задачи для агента
 type Task struct {
 	Id int 						 `json: 'id'`
+	ExpressionId int 			 `json: 'expression_id'`
 	Arg1 float64 				 `json: 'arg1'`
 	Arg2 float64 				 `json: 'arg2'`
+	Result float64					 `json: 'result'`
 	Operation string 			 `json: 'operation'`
-	Operation_time time.Duration `json: 'operation_time'`
+	OperationTime time.Duration `json: 'operation_time'`
+	Status string 				 `json: 'status'`
 }
 //представление результата задачи
 type ResultTask struct {

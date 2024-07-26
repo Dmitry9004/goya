@@ -1,7 +1,9 @@
 package services
 
 import "goya/project/internal/models"
-import "github.com/recoilme/pudge"
+import "goya/project/internal/dao"
+
+//import "github.com/recoilme/pudge"
 import "crypto/rand"
 import "math/big"
 import "time"
@@ -12,19 +14,12 @@ import "log"
 //метод разбивает постифксное выражжение на мелкие "сырые" задачи
 //и складывает в базе данных
 //после того как все задачи были выполнены, метод сохраняет итоговое представление с результатом
-func ToSimpleTask(chanPostfixExpression chan *models.PostfixExpression, operationsTime map[string]time.Duration) {
-    db, _ := pudge.Open("../expressions", nil)
-    dbTasksDone, _ := pudge.Open("../tasks/done", nil)
-	dbTasksRaw, _ := pudge.Open("../tasks/raw", nil)
-	
-	defer db.Close()
-	defer dbTasksDone.Close()
-	defer dbTasksRaw.Close()
+func ToSimpleTask(chanPostfixExpression chan *models.PostfixExpression, operationsTime map[string]time.Duration, taskDAO *dao.TaskDAO, expressionDAO *dao.ExpressionDAO) {
 
 	for {
         select {
             case postfixExppression := <-chanPostfixExpression:
-            	err := ""
+            	resError := ""
 				expression := postfixExppression.Expression
                 tasksId := models.NewStack[int]()
                 st := models.NewStack[string]()
@@ -33,7 +28,7 @@ func ToSimpleTask(chanPostfixExpression chan *models.PostfixExpression, operatio
 				
                 for i := 0; i < len(expression); i++ {
                     if len(expression) > i+2 && isNum(expression[i]) && isNum(expression[i+1]) && !isNum(expression[i+2]) {
-                        
+        
                         id := GenerateId()
 						arg1, _ := strconv.ParseFloat(expression[i], 64)
 						arg2, _ := strconv.ParseFloat(expression[i+1], 64)
@@ -42,13 +37,22 @@ func ToSimpleTask(chanPostfixExpression chan *models.PostfixExpression, operatio
                             Id: id,
                             Arg1: arg1,
                             Arg2: arg2,
+							Result: 0,
                             Operation: expression[i+2],
-                            Operation_time: operationsTime[expression[i]],
+                            OperationTime: operationsTime[expression[i]],
+							Status: "raw",
                         }
                         
                         tasksId.Push(id)
-                        dbTasksRaw.Set(id, task)
-												
+						
+						log.Println(task)
+						
+						err := taskDAO.SaveTask(task)
+						if err != nil {
+							log.Println(err)
+							resError = "err"
+						}
+						
                         i += 2
                     } else {
                         if isNum(expression[i]) {
@@ -66,83 +70,124 @@ func ToSimpleTask(chanPostfixExpression chan *models.PostfixExpression, operatio
 								
 								if index == i - 1 {
 									arg2 = models.ResultTask { Result: result, }
-									
-									waitDoneTask(dbTasksDone, tasksId.Peek())
-									dbTasksDone.Get(tasksId.Pop(), &arg1)
+				
+									resTask := waitDoneTask(tasksId.Pop(), taskDAO)
+									doneTask := models.ResultTask{
+										Id: resTask.Id,
+										Result: resTask.Result,
+									}
+									arg1 = doneTask
 								} else {
 									arg1 = models.ResultTask { Result: result, }
 									
-									waitDoneTask(dbTasksDone, tasksId.Peek())
-									dbTasksDone.Get(tasksId.Pop(), &arg2)
+									resTask := waitDoneTask(tasksId.Pop(), taskDAO)
+							
+									doneTask := models.ResultTask{
+										Id: resTask.Id,
+										Result: resTask.Result,
+									}
+									arg2 = doneTask
+									
 								}
-                            } else {
-                                waitDoneTask(dbTasksDone, tasksId.Peek())
-								dbTasksDone.Get(tasksId.Pop(), &arg2)
-                                
-                                waitDoneTask(dbTasksDone, tasksId.Peek())
-								dbTasksDone.Get(tasksId.Pop(), &arg1)
+                            } else if tasksId.Len() != 0 {
+								resTask := waitDoneTask(tasksId.Pop(), taskDAO)
+									doneTask := models.ResultTask{
+										Id: resTask.Id,
+										Result: resTask.Result,
+									}
+								arg2 = doneTask
+							
+								resTask = waitDoneTask(tasksId.Pop(), taskDAO)
+									doneTask = models.ResultTask{
+										Id: resTask.Id,
+										Result: resTask.Result,
+									}
+								arg1 = doneTask
+									
+							} else {
+								resError = "err"
+								break
 							}
-                            
                             task := &models.Task {
                                 Id: id,
                                 Arg1: arg1.Result,
                                 Arg2: arg2.Result,
+								Result: 0,
                                 Operation: expression[i],
-                                Operation_time: operationsTime[expression[i]],
+                                OperationTime: operationsTime[expression[i]],
+								Status: "raw",
                             }
 							if task.Operation == "/" && arg2.Result == 0 {
-								db.Delete(postfixExppression.Id)
-
-								resultExpression := &models.Expression {
-									Id:postfixExppression.Id,
-									Status: "Not valide expression",
-									Result: "...",
-								}
-
-								db.Set(postfixExppression.Id, resultExpression)
-								err = "err"
+								resError = "err"
 								break
 							}
 
-                            dbTasksRaw.Set(id, task)
+                            err := taskDAO.SaveTask(task)
+							if err != nil {
+								log.Println(err)
+								resError = "err"
+								break
+							}
 							tasksId.Push(id)
 						}                        
                     }
                 }
 
-                if len(err) != 0 {
+                if len(resError) != 0 {
+					//need save expression with status 'not valid data'
+					
+					origExpression, _ := expressionDAO.GetExpressionById(postfixExppression.Id)
+					
+					failExpression := &models.Expression {
+						Id: origExpression.Id,
+						UserId: origExpression.UserId,
+						Result: "",
+						Status: "not valid expression",
+					}
+					expressionDAO.UpdateExpression(failExpression)
                 	continue
                 }
 				
-				for {
-					if t, _ := dbTasksDone.Has(tasksId.Peek()); t {
-						break
+				var taskResult models.Task
+				id := tasksId.Peek()
+				if tasksId.Len() != 0 {
+					for {
+						task, err := taskDAO.GetTask(id)
+						if err == nil && task.Status == "done" {
+							taskResult = task
+							break
+						}
 					}
-				}
+					tasksId.Pop()
+				} 
 		
-				db.Delete(postfixExppression.Id)
-				var task models.ResultTask
-				dbTasksDone.Get(tasksId.Pop(), &task)
-			
-				result := strconv.FormatFloat(task.Result, 'f', -1, 64)
+				result := strconv.FormatFloat(taskResult.Result, 'f', -1, 64)
 				
 				resultExpression := &models.Expression {
 					Id:postfixExppression.Id,
 					Status: "Done",
 					Result: result,
 				}
-
-				db.Set(postfixExppression.Id, resultExpression)
-        }
+				
+				log.Println(resultExpression)
+				
+				errSave := expressionDAO.UpdateExpression(resultExpression)
+				
+				if errSave != nil {
+					log.Println(errSave)
+				}
+		}
     }
 }
 
-func waitDoneTask(dbTasksDone *pudge.Db, taskId int) {
+func waitDoneTask(taskId int, taskDAO *dao.TaskDAO) models.Task {
     for {
-        if t, _ := dbTasksDone.Has(taskId); t {
-            break;
-        }
+		task, err := taskDAO.GetTask(taskId)
+		if err == nil && task.Status == "done" {
+			return task
+		}
     }
+	return models.Task{}
 }
 
 //метод генерации ID для представлений с использованием 

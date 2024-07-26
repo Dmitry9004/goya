@@ -1,13 +1,15 @@
 package services
 
-import "goya/project/internal/models"
-import "regexp"
-import "errors"
-import "log"
-import "encoding/json"
-import "time"
-import "net/http"
-import "bytes"
+import (
+	"goya/project/internal/models"
+	pb "goya/project/proto"
+	
+	"regexp"
+	"errors"
+	"log"
+	"time" 
+	"context"
+)
 
 //метод проверки знака на число
 func isNum(str string) bool {
@@ -111,7 +113,7 @@ func ExecTask(chanTasks chan models.Task, chanResults chan *models.ResultTask) {
 	for {
 		select {
 			case task := <- chanTasks:
-				timer := time.NewTimer(task.Operation_time)
+				timer := time.NewTimer(task.OperationTime)
 				select {
 					case <-timer.C:	
 						result, err := calculate(task) 
@@ -130,15 +132,19 @@ func ExecTask(chanTasks chan models.Task, chanResults chan *models.ResultTask) {
 	}
 }
 
-//метод ждет результат в канале и после отпрвляет на сервер
-func WaiterResults(chanResults chan *models.ResultTask) {
-	client := http.Client{}
+//метод ждет результат в канале и после отправляет на сервер
+func WaiterResults(chanResults chan *models.ResultTask, client pb.TaskServiceClient) {
 	for {
 		select {
 			case result := <- chanResults:
-			
-				data, _ := json.Marshal(result)
-				_, err := client.Post("http://localhost:8080/internal/task", "application/json", bytes.NewBuffer(data))
+				
+				messageResultTask := &pb.ResultTask {
+					Id: int64(result.Id),
+					Result: result.Result,
+				}
+				
+				//вызов grpc метода
+				_, err := client.PostResultTask(context.TODO(), messageResultTask)
 				
 				if err != nil {
 					log.Println("error from waiterResults")
@@ -149,22 +155,31 @@ func WaiterResults(chanResults chan *models.ResultTask) {
 }
 
 //метод запрашивает с сервера задачи и отправляет их в канал
-func TakerTask(chanTasks chan models.Task) {
+func TakerTask(chanTasks chan models.Task, client pb.TaskServiceClient) {
 	ticker := time.NewTicker(time.Second)
-	client := http.Client{}
-	url := "http://localhost:8080/internal/task"
 	
 	for {
 		select {
-			case <- ticker.C :
-				response, err := client.Get(url)
-				if err != nil || response.StatusCode != 200 {
-					log.Println("error from takerTask")
+			case <- ticker.C: 
+				
+				rpcTask, err := client.GetRawTask(context.TODO(), &pb.Empty{})
+				
+				if err != nil {
+					log.Println(err)
 					continue
-				} 
-
-				var task models.Task
-				json.NewDecoder(response.Body).Decode(&task)
+				}
+				
+				time, _ := time.ParseDuration(rpcTask.OperationTime)
+				task := models.Task {
+					Id: int(rpcTask.Id),
+					ExpressionId: int(rpcTask.ExpressionId),
+					Arg1: rpcTask.Arg1,
+					Arg2: rpcTask.Arg2,
+					Result: rpcTask.Result,
+					Operation: rpcTask.Operation,
+					OperationTime: time,
+					Status: rpcTask.Status,
+				}
 				
 				chanTasks <- task
 		}
