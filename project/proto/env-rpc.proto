@@ -1,0 +1,26 @@
+syntax = "proto3";
+package proto;
+option go_package = "/internal";
+
+message Task {
+	int64 Id = 1;
+	int64 ExpressionId = 2;
+	double Arg1 = 3;
+	double Arg2 = 4;
+	double Result = 5;
+	string Operation = 6;
+	string OperationTime = 7;
+	string Status = 8;
+}
+
+message ResultTask {
+	int64 Id = 1;
+	double Result = 2;
+}
+
+message Empty {}
+
+service TaskService {
+	rpc GetRawTask(Empty) returns (Task);
+	rpc PostResultTask(ResultTask) returns (Empty);
+}
