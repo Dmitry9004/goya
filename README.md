@@ -33,5 +33,5 @@ REST, разбивающий арифметическое выражение н�
 
 Аутентификация пользователя:<br />
 ````curl  -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/login````
-
-````curl  -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/register````
+Ответ: <br />
+````{}````
