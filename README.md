@@ -31,12 +31,12 @@ API работает только с целыми числами.<br />
 ```go run goya\project\internal\app\main.go (As admin)```<br />
 
 Регистрация пользователя:<br />
-````curl -X POST -H "Content-Type: application/json" -d "{\"username\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/register````
+````curl -X POST -H "Content-Type: application/json" -d "{\"username\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/register````<br />
 
 Аутентификация пользователя:<br />
-````curl -X POST -H "Content-Type: application/json" -d "{\"username\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/login````
+````curl -X POST -H "Content-Type: application/json" -d "{\"username\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/login````<br />
 Ответ: <br />
-````{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjIxNzU4MDUsInVzZXJfaWQiOjZ9.UDrrQMVghpzFD-VpO1mFOrumWetmOmiEj_zLjub1NjI"}````
+````{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjIxNzU4MDUsInVzZXJfaWQiOjZ9.UDrrQMVghpzFD-VpO1mFOrumWetmOmiEj_zLjub1NjI"}````<br />
 
 Запуск тестов:<br />
 ````cd goya\project\tests````<br />
