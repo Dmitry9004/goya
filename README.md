@@ -25,7 +25,7 @@ API работает только с целыми числами.<br />
 Ответ:<br />
 ```{"Id":5433955,"Status":"Done","Result":"0"}```<br />
 
-Для запуска проекта: (для запуска требуется компилятор gcc (CGO)) <br />
+Для запуска проекта: (требуется компилятор gcc (CGO)) <br />
 ```cd %GOPATH% (example - "C:\Program Files\Go\src")```<br />
 ```git clone https://github.com/Dmitry9004/goya.git```<br />
 ```go run goya\project\internal\app\main.go (As admin)```<br />
