@@ -9,18 +9,18 @@ API работает только с целыми числами.
 Примеры:<br />
 
 Отправка выражения на обработку:<br />
-```curl -X POST -H "Content-Type: application/json" -d "{\"expression\":\"2+2*2\"}" localhost:8080/api/v1/calculate```<br />
+```-X POST -H "Content-Type: application/json" -H "Authorization: this example token ..." -d "{\"expression\":\"2+2*412\"}" localhost:8080/api/v1/calculate```<br />
 Ответ:<br />
 ```{"id": 253234}```<br />
 
 Получениe всех выражений:<br />
-```curl localhost:8080/api/v1/expressions```<br />
+```curl -H "Authorization: this example token ..."  localhost:8080/api/v1/expressions```<br />
 Ответ:<br />
 ```[{"Id":6813596,"Status":"Done","Result":"6"}```<br />
 ```{"Id":2182735,"Status":"Done","Result":"100"}]```<br />
 
 Получение выражения по его id:<br />
-```curl localhost:8080/api/v1/expressions/5433955```<br />
+```curl -H "Authorization: this example token ..." localhost:8080/api/v1/expressions/5433955```<br />
 Ответ:<br />
 ```{"Id":5433955,"Status":"Done","Result":"0"}```<br />
 
@@ -30,9 +30,13 @@ API работает только с целыми числами.
 ```go run goya\project\internal\app\main.go (As admin)```<br />
 
 Регистрация пользователя:<br />
-````curl  -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/register````
+````curl -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/register````
 
 Аутентификация пользователя:<br />
-````curl  -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/login````
+````curl -X POST -H "Content-Type: application/json" -d "{\"login\":\"user-test\",\"password\":\"pass-test\"}" localhost:8080/auth/login````
 Ответ: <br />
-````{}````
+````{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjIxNzU4MDUsInVzZXJfaWQiOjZ9.UDrrQMVghpzFD-VpO1mFOrumWetmOmiEj_zLjub1NjI"}````
+
+Запуск тестов:
+````cd goya\project\tests````
+````go run tests -v````
